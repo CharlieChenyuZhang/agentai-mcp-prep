@@ -12,15 +12,10 @@ const chatMCP = async (query) => {
   const apiKey = process.env.OPENAI_API_KEY;
 
   // Create MCP client
-  const client = new Client(
-    {
-      name: "chat-client",
-      version: "1.0.0",
-    },
-    {
-      capabilities: {},
-    }
-  );
+  const client = new Client({
+    name: "chat-client",
+    version: "1.0.0",
+  });
 
   // Get the path to the MCP server
   const serverPath = join(__dirname, "mcp-server.js");
