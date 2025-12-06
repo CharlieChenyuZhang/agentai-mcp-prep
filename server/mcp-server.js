@@ -27,17 +27,6 @@ server.registerTool(
   },
   async ({ query, num = 10 }) => {
     try {
-      if (!SERPAPI_KEY) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "Error: SERPAPI_KEY environment variable is not set",
-            },
-          ],
-        };
-      }
-
       const results = await getJson({
         engine: "google",
         q: query,
@@ -45,33 +34,8 @@ server.registerTool(
         api_key: SERPAPI_KEY,
       });
 
-      // Format the search results
-      const organicResults = results.organic_results || [];
-      const formattedResults = organicResults
-        .map((result, index) => {
-          return `${index + 1}. ${result.title || "No title"}\n   URL: ${
-            result.link || "No URL"
-          }\n   ${result.snippet || "No snippet"}`;
-        })
-        .join("\n\n");
-
-      const answerBox = results.answer_box
-        ? `\n\nAnswer Box:\n${
-            results.answer_box.answer || results.answer_box.snippet || ""
-          }`
-        : "";
-
-      const knowledgeGraph = results.knowledge_graph
-        ? `\n\nKnowledge Graph:\n${results.knowledge_graph.description || ""}`
-        : "";
-
-      const searchInfo = results.search_information
-        ? `\n\nSearch Info: Found approximately ${
-            results.search_information.total_results || "unknown"
-          } results`
-        : "";
-
-      const fullResults = `Search Results for "${query}":${searchInfo}${answerBox}${knowledgeGraph}\n\nOrganic Results:\n${formattedResults}`;
+      // Return all results as plain text
+      const fullResults = JSON.stringify(results, null, 2);
 
       return {
         content: [
