@@ -34,14 +34,6 @@ const chatMCP = async (query) => {
     // Connect to the MCP server
     await client.connect(transport);
 
-    // List available tools
-    const tools = await client.listTools();
-    const searchTool = tools.tools.find((tool) => tool.name === "search_web");
-
-    if (!searchTool) {
-      throw new Error("search_web tool not found in MCP server");
-    }
-
     // Always perform web search
     const toolResult = await client.callTool({
       name: "search_web",
