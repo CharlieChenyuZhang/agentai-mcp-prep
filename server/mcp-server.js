@@ -35,7 +35,7 @@ server.registerTool(
       });
 
       // Return all results as plain text
-      const fullResults = JSON.stringify(results, null, 2);
+      const fullResults = JSON.stringify(results);
 
       return {
         content: [
