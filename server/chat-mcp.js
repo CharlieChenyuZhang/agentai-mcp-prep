@@ -8,31 +8,64 @@ import { PromptTemplate } from "@langchain/core/prompts";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Reusable MCP client instance
+let client = null;
+let transport = null;
+let isConnecting = false;
+let connectionPromise = null;
+
+// Initialize the MCP client connection (lazy initialization)
+const ensureConnected = async () => {
+  // If already connected, return
+  if (client && transport) {
+    return;
+  }
+
+  // If connection is in progress, wait for it
+  if (isConnecting && connectionPromise) {
+    await connectionPromise;
+    return;
+  }
+
+  // Start new connection
+  isConnecting = true;
+  connectionPromise = (async () => {
+    try {
+      // Create MCP client
+      client = new Client({
+        name: "chat-client",
+        version: "1.0.0",
+      });
+
+      // Get the path to the MCP server
+      const serverPath = join(__dirname, "mcp-server.js");
+
+      // Create transport to connect to the MCP server
+      transport = new StdioClientTransport({
+        command: "node",
+        args: [serverPath],
+        env: {
+          ...process.env, // Inherit all environment variables from parent process
+        },
+      });
+
+      // Connect to the MCP server
+      await client.connect(transport);
+    } finally {
+      isConnecting = false;
+      connectionPromise = null;
+    }
+  })();
+
+  await connectionPromise;
+};
+
 const chatMCP = async (query) => {
   const apiKey = process.env.OPENAI_API_KEY;
 
-  // Create MCP client
-  const client = new Client({
-    name: "chat-client",
-    version: "1.0.0",
-  });
-
-  // Get the path to the MCP server
-  const serverPath = join(__dirname, "mcp-server.js");
-
-  // Create transport to connect to the MCP server
-  // Pass environment variables to the child process
-  const transport = new StdioClientTransport({
-    command: "node",
-    args: [serverPath],
-    env: {
-      ...process.env, // Inherit all environment variables from parent process
-    },
-  });
-
   try {
-    // Connect to the MCP server
-    await client.connect(transport);
+    // Ensure client is connected (reuse existing connection)
+    await ensureConnected();
 
     // Always perform web search
     const toolResult = await client.callTool({
@@ -70,16 +103,17 @@ Helpful Answer:`;
     const response = await model.invoke(formattedPrompt);
     const finalAnswer = response.content;
 
-    // Clean up
-    await client.close();
-
     return { text: finalAnswer };
   } catch (error) {
-    // Clean up on error
-    try {
-      await client.close();
-    } catch (e) {
-      // Ignore cleanup errors
+    // If connection error, reset client to allow reconnection on next request
+    if (client) {
+      try {
+        await client.close();
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+      client = null;
+      transport = null;
     }
 
     throw error;
