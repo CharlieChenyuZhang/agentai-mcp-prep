@@ -8,9 +8,9 @@ import { dirname, join } from "path";
 
 // Load environment variables from .env file
 // Try loading from current directory and parent directory
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-dotenv.config({ path: join(__dirname, ".env") });
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = dirname(__filename);
+// dotenv.config({ path: join(__dirname, ".env") });
 
 const SERPAPI_KEY = process.env.SERPAPI_KEY;
 
